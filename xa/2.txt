@@ -1,0 +1,342 @@
+//采购订单跟踪
+export default {
+  name: 'substituteBuildPurchaseBill',
+  data() {
+    return {
+      objArr:[],//修改页面供应商下拉框
+      invoiceTypess:[],
+      fundSideCodes: [],//资金方信息
+      selectOptions:[],
+      depreciation:[],//成色信息
+      brands:[],//品牌信息
+      tableData: [],
+      categoryTypes: [],//商品类目
+      sumTableData: [],
+      sumTableOption: this.getSumTableOption(),
+      // sumSearchModel:this.initSumSearchModel(),
+      sumDialog: {
+        sumVisible: false,
+      },
+      createTableOption: this.getCreateTableOption(),
+      tableOption: this.getTableOption(),
+      searchModel: this.initSearchModel(),
+      logisticsDialog: {
+        visible: false,
+        list: []
+      },
+      currentItem: null
+    }
+  },
+  methods: {
+    //查询
+    search() {
+      if (!this.searchModel.fundSideCode) {
+        this.alert.toast('资金方为必选项目!');
+        return;
+      }
+      let params = {
+        fundSideCode: this.searchModel.fundSideCode,
+        categoryType: this.searchModel.categoryTypeCode,
+        brandCode: this.searchModel.commodityBrandNo,
+        depreciationRatio: this.searchModel.itemNo,
+      }
+      
+      // params['pageNum'] = pageInfo.pageIndex
+      // params['pageSize'] = pageInfo.pageSize
+      this.api.vopOrderBill.getSubstituteList.send(params, { showLoading: true }).then(res => {
+        if (res.code === '00') {
+          this.tableData = res.data.list || [];
+          //callback(res.data.total);
+          console.log(this.tableData);
+          // localStorage['tableList'] =JSON.stringify(this.tableData);
+        }
+      })
+      this.$refs.table.refreshPaging(1);
+    },
+    //查询实体
+    initSearchModel() {
+      return {
+        fundSideCode:'',
+        categoryTypeCode:'',
+        commodityBrandNo:'',
+        codeTypeNo:'',     
+      }
+    },
+   
+    // 重置
+    reset() {
+      this.searchModel = this.initSearchModel();
+      this.$refs.table.refreshPaging(1);
+    },
+    // 表格配置
+    getTableOption() {
+      let thisObj = this;
+      let option = {
+        showPage: true,
+        showCheck: true,
+        autoHeight: true,
+        showSerial: true,
+        columns: [
+          { prop: 'orderNo', label: '订单编号', width: 150 },
+          { prop: 'commodityNo', label: '商品编号', width: 100 },
+          { prop: 'shortName', label: '商品短名称/规格', width: 150 },
+          { prop: 'brandName', label: '品牌', width: 100 },
+          { prop: 'depreciationRatio', label: '成色', width: 100 },
+          { prop: 'customerName', label: '客户姓名', width: 100 },
+          { prop: 'venderName',label: '供应商名称', width: 120 },
+          { prop: 'invoiceType', label: '发票类型', width: 150 },
+          { prop: 'buyPrice', label: '报价', width: 150 },         
+          { prop: 'actualBuyPrice', label: '实际采购价', width: 150 },
+          { prop: 'purchaseRedPrice', label: '采购红线价', width: 150 },
+          { prop: 'isbeyondRed', label: '是否超出红线', width: 150 },
+          { prop: 'floatRatio', label: '浮动比率', width: 150 },
+          { prop: 'categoryType', label: '所属类目', width: 150 },
+          { prop: 'brandName', label: '商品品牌', width: 150 },
+          { prop: 'depreciationRatio', label: '成色信息', width: 150 },
+          { prop: 'orderApplyTime', label: '订单申请时间', width: 150 },
+          { prop: 'intoChannel', label: '进件渠道', width: 150 },
+        ]
+      }
+      return option;
+    },
+    //初始化下拉框选项
+    initgetSelectOption(){
+      this.api.vopOrderBill.getSelectOption.send().then(res=>{
+        if(res.code==='00'){
+            this.selectOptions = res.data || [];
+            this.depreciation = this.selectOptions.depreciation;//成色
+            this.brands = this.selectOptions.brands;//商品品牌
+            this.categoryTypes = this.selectOptions.categoryTypes;
+            
+            this.fundSideCodes = this.selectOptions.fundSideInfos;
+        }
+      })
+    },
+    //生成采购单弹框表配置
+      getCreateTableOption() {
+      let thisObj = this;
+      let option = {
+        showPage: false,
+        showCheck: false,
+        autoHeight: true,
+        showSerial: true,
+        columns: [
+          { prop: '', label: '采购单号', width: 200 },
+          { prop: '', label: '供应商名称', width: 100 },
+          { prop: '', label: '订单数量', width: 100 },
+          { prop: '', label: '订单金额', width: 100 },        
+          
+        ]
+      }
+
+      return option;
+    },
+    // 加载表格数据
+    // getList(pageInfo,callback) {
+    //   let params = {fundSideCode:this.searchModel.fundSideCode,
+    //               categoryType:this.searchModel.categoryTypeCode,
+    //               brandCode:this.searchModel.commodityBrandNo,
+    //               depreciationRatio:this.searchModel.itemNo,     
+    //   }     
+    //   params['pageNum'] = pageInfo.pageIndex
+    //   params['pageSize'] = pageInfo.pageSize
+    //   console.log(params);
+    //   this.api.vopOrderBill.getSubstituteList.send(params, { showLoading: true }).then(res => {
+    //     if (res.code === '00') {
+    //       this.tableData = res.data.list || [];
+    //        callback(res.data.total);
+    //     }
+    //   })
+    // },
+    // 导出
+    exportPurchase() {
+
+    },
+    // 批量下采购单
+    batchPurchase() {
+      let item = {id:"12", resourceCode:'receivingReportManage', resourceName:'批量下采购单'}
+      let route = this.permission.getRouteByCode(this.$router.options.routes, item.resourceCode);
+      if (route) {
+        this.$router.push({ name: route.name });
+      }
+    },
+
+    //汇总预览
+    sumPreview() {
+      let rows = this.$refs.table.getSelectedRows();
+     // console.log(rows);
+      if (rows.length === 0) {
+        this.alert.toast('请至少选择一条订单操作');
+        return;
+      }
+      //console.log(rows);
+      let commodityNoArr = [];//临时数组 遍历每一项获取其供应商编号
+      for (let i = 0; i < rows.length; i++) {
+        console.log(rows[i].commodityNo);
+        commodityNoArr.push(rows[i].commodityNo);
+      }
+     
+      let commodityNoArrUin = [];//去重后的数组 汇总
+      for (var i = 0; i < commodityNoArr.length; i++) {
+        if (commodityNoArrUin.indexOf(commodityNoArr[i]) == -1) {
+          commodityNoArrUin.push(commodityNoArr[i]);
+        }
+      }  
+      console.log(commodityNoArrUin);  
+      //判断商品编号出现的次数 方便计算总价格及总金额
+      let total = {};//商品编号出现次数汇总 为对象
+      for (var i = 0; i < commodityNoArr.length; i++) {
+        var item = commodityNoArr[i];
+        if (total[item]) {
+          total[item]++;
+        } else {
+          total[item] = 1;
+        }
+      }
+      for(var key in total){   
+        // for(let i=0;i<arrLength;i++){
+        // //console.log(editTabltData[key]);  
+        // }
+        // testAllKey.push(editTabltData[key]);
+      }
+      //循环出所有需要带到详情页的数据
+      let aLLPrice = [];
+      let allVendName = [];
+      let allShortName = [];
+      console.log(total[key]);
+      for(let i=0;i<commodityNoArrUin.length;i++){
+        for(let j=0;j<rows.length;j++){
+          if(rows[j].commodityNo==commodityNoArrUin[i]){
+            aLLPrice.push(rows[j].buyPrice);
+            allVendName.push(rows[j].venderName);
+            allShortName.push(rows[j].shortName);
+          }
+        }
+      }
+      console.log(aLLPrice);
+      console.log(allVendName);
+      console.log(allShortName);
+      //console.log(price);
+     console.log(total[key]);
+     //获取json即商品编号的个数。
+     
+     //console.log(countss);
+     
+    // ];
+     let data = [];
+     let commodityNoList = [];
+    for(let i=0;i<commodityNoArrUin.length;i++){
+      //if(rows[i].commodityNo==commodityNoArrUin[i] && commodityNoArrUin[i].indexOf(commodityNoList) == -1){
+        if(rows[i].commodityNo==commodityNoArrUin[i]) {
+      data.push(rows);
+        // for(let j=0;j<4;j++){
+        //   commodityNoList.push(data[0][j].commodityNo);
+        //   console.log(commodityNoList);
+        // }
+      }
+    }
+
+    //console.log(data[0].length);
+  //   let rowsss = [].concat.apply([], rowss);   
+  //   console.log(rowss);
+  //   // console.log(rows);
+  //  console.log(rowsss);
+  //   //  rowss = {
+  //   //   commodityNo:1,
+  //   // }
+     this.sumTableData =data[0],
+     console.log(this.sumTableData);
+    //  for(let i=0;i<this.sumTableData.length;i++){
+    //  this.sumTableData[i].totalBuyPrice = total[key]*this.sumTableData[i].buyPrice,
+    //  this.sumTableData[i].totalBuyNum = total[key]    
+    //  }
+      this.sumDialog.sumVisible = true;
+      //this.sumSearchModel = this.initSumSearchModel();
+    },
+
+
+
+
+
+    //用户修改供应商或发票类型下拉框
+    editInfo(index,row){
+      let param = {commodityNo:row.commodityNo};     
+      this.api.vopOrderBill.editSubstituteInfo.send(param, { showLoading: true }).then(res => {
+          if (res.code === '00') {
+            let editTabltData=res.data.vendorPriceList;
+            // console.log(res.data);
+            //console.log(editTabltData);
+            let testAllKey = [];
+            //循环得到返回数据对象的value值 即数组
+            let arrLength = Object.keys(editTabltData).length;
+            for(var key in editTabltData){   
+              for(let i=0;i<arrLength;i++){
+              //console.log(editTabltData[key]);  
+              }
+              testAllKey.push(editTabltData[key]);
+            }
+            console.log(testAllKey);           
+              let venderNames = [];
+              let venderCodes = [];
+              let invoiceTypes = [];
+              let invoiceId = [];
+              for(let i=0;i<testAllKey.length;i++){
+                //遍历拿到下拉框数据
+                venderNames.push(testAllKey[i][0].vendorName);
+                venderCodes.push(testAllKey[i][0].vendorCode);
+                invoiceTypes.push(testAllKey[0][i].invoiceType);
+                invoiceId.push(testAllKey[0][i].id)
+              }
+              console.log(invoiceTypes);
+              let objArr = [];
+            for(let i = 0; i<venderNames.length; i++){
+                let obj = {};
+                obj.venderName = venderNames[i];
+                obj.venderCode = venderCodes[i];
+                objArr.push(obj);
+                this.objArr = objArr;
+              }
+              console.log(objArr);
+               let invoiceTypess = [];
+              for(let i = 0; i<invoiceTypes.length; i++){
+                  let obj = {};
+                  obj.id = invoiceId[i];
+                  obj.invoiceType = invoiceTypes[i];
+                  invoiceTypess.push(obj);
+                  this.invoiceTypess = invoiceTypess;
+                }
+                console.log(invoiceTypess);
+          }
+        })
+    },
+    //生成采购单
+     buildPurchase(){
+      let rows = this.$refs.table.getSelectedRows();
+            if (rows.length === 0) {
+                this.alert.toast('请至少选择一条订单操作');
+                return;
+            }
+      this.createDialog.createVisible = true;
+    },
+    //汇总预览表格配置
+  getSumTableOption(){         
+            let option = {
+                columns:[
+                    { prop:'venderCodes',label:'供应商编号',width:200 },
+                    { prop:'',label:'供应商名称',width:150},
+                     { prop:'',label:'商品编号',width:200 },
+                    { prop:'',label:'商品短名称/规格',width:220 },
+                    { prop:'',label:'数量',width:80 },
+                    { prop:'',label:'金额',width:80 },
+                   
+                    
+                ]
+            }
+    
+            return option;
+        },
+  },
+  mounted() {
+    this.initgetSelectOption();
+  }
+}

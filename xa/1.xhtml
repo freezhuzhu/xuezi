@@ -1,0 +1,121 @@
+<template>
+  <div class="purchaseTraining-main">         
+    <div class="common-search">
+      <!-- 查询条件 -->
+      
+      <el-row style="">
+        <el-col :span="7" class="el-clo-sty">
+          <label><span style="color:red">*</span>采购单类型</label>
+          <el-input disabled value="按单采购"></el-input>
+        </el-col>
+        <el-col :span="7" class="el-clo-sty">
+          <label><span style="color:red">*</span>采购主体</label>
+          <el-input disabled value="金达"></el-input>
+        </el-col>
+        <el-col :span="7" class="el-clo-sty">
+          <label><span style="color:red">*</span>资金方</label>
+          <el-select v-model="searchModel.fundSideCode" clearable placeholder="请选择">
+            <el-option v-for="item in fundSideCodes" :key="item.fundSideCode" :label="item.fundSideName" :value="item.fundSideCode">
+            </el-option>
+          </el-select>
+        </el-col>
+        
+        <el-col :span="7" class="el-clo-sty">
+          <label>商品类目</label>
+          <el-select v-model="searchModel.categoryTypeCode" clearable placeholder="请选择">
+            <el-option v-for="item in categoryTypes" :key="item.categoryTypeCode" :label="item.fullName" :value="item.categoryTypeCode">
+            </el-option>
+          </el-select>
+        </el-col>
+        <el-col :span="7" class="el-clo-sty">
+          <label>商品品牌</label>
+          <el-select v-model="searchModel.commodityBrandNo" clearable placeholder="请选择">
+            <el-option v-for="item in brands" :key="item.commodityBrandNo" :label="item.commodityBrandName" :value="item.commodityBrandNo">
+            </el-option>
+          </el-select>
+        </el-col>
+        <el-col :span="7" class="el-clo-sty">
+          <label>成色信息</label>
+          <el-select v-model="searchModel.itemNo" clearable placeholder="请选择">
+            <el-option v-for="item in depreciation" :key="item.itemNo" :label="item.itemName" :value="item.itemNo">
+            </el-option>
+          </el-select>
+        </el-col>
+      </el-row>
+
+      <div style="text-align: center; padding: 10px;float:right">
+        <el-button type="primary" icon="el-icon-search" @click="search()">获取订单</el-button>
+        <el-button icon="el-icon-refresh" @click="reset()">重置</el-button>
+      </div>
+      <div class="item" style="float:left;margin-top: 50px;">
+          <el-button type="primary" @click="sumPreview()">生成采购单</el-button>                
+      </div>     
+    </div>
+    <my-table ref="table" :data="tableData" :option="tableOption"></my-table>
+   <!--  //生成采购单预览弹框 -->
+     <my-dialog 
+            title='采购单预览' 
+            :option='{showFooter:false}'
+            :visible.sync='sumDialog.sumVisible'>
+            <!-- <my-table ref="sumTable" :height="300" :data="sumTableData" :option="sumTableOption"></my-table> -->
+            <el-table ref="sumTable" style="width: 100%" :data="sumTableData">
+              <el-table-column type="index" label="序号" align="center">
+              </el-table-column>
+              <el-table-column prop="venderCode" label="供应商编号" width="180" align="center">
+                  <template scope="scope" >
+                      <el-input v-model="scope.row.venderName">                      
+                      </el-input>
+                    </template>
+              </el-table-column>
+              <el-table-column label="供应商名称" width="150" prop="venderName" align="center">
+                <template scope="scope" >
+                  <el-select v-model="scope.row.venderName" @focus="editInfo(scope.$index, scope.row)" >
+                    <el-option v-for="item in objArr" :key="item.venderCode" :label="item.venderName"
+                      :value="item.venderCode">
+                    </el-option>
+                  </el-select>
+                </template>
+              </el-table-column>
+              <el-table-column prop="commodityNo" label="商品编号" width="120" align="center">
+              </el-table-column>
+              <el-table-column label="商品名称/规格" width="120" prop="shortName" align="center">
+              </el-table-column>
+              <el-table-column label="采购数量" width="120" prop="totalBuyNum" align="center">
+              </el-table-column>
+              <el-table-column prop="buyPrice" label="报价" width="120" align="center">
+                <template scope="scope">
+                  <el-input disabled v-model="scope.row.invoiceType"></el-input>
+                </template> 
+              </el-table-column>
+              <el-table-column prop="invoiceType" label="发票类型" width="120" align="center">
+                <template scope="scope">
+                  <el-select v-model="scope.row.invoiceType" @focus="editInfo(scope.$index, scope.row)">
+                    <el-option v-for="item in invoiceTypess" :key="item.invoiceType" :label="item.invoiceType"
+                      :value="item.invoiceType">
+                    </el-option>
+                  </el-select>
+                </template>
+              </el-table-column>
+              <el-table-column prop="actualBuyPrice" label="实际采购价" width="120" align="center">
+                  <template scope="scope">
+                      <el-input v-model="scope.row.actualBuyPrice"></el-input>
+                    </template>
+              </el-table-column>
+              <el-table-column label="总金额" width="120" prop="totalBuyPrice" align="center">
+              </el-table-column>
+            </el-table>
+            <div class="item" style="text-align: center;">
+                <el-button type="primary" @click="">确定生成采购单</el-button>                
+            </div> 
+        </my-dialog>
+  </div>
+</template>
+
+<script>
+import vueJs from "./substituteBuildPurchaseBill.js";
+export default vueJs;
+</script>
+
+<style lang="scss" scoped>
+@import "./substituteBuildPurchaseBill.scss";
+</style>
